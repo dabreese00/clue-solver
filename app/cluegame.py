@@ -67,7 +67,7 @@ class Show:
 class Game:
     clue_cards = {
         ClueCardType.PERSON: {"Colonel Mustard", "Miss Scarlet", "Professor Plum", "Mrs. White", "Mr. Green", "Mrs. Peacock"},
-        ClueCardType.WEAPON: {"Rope", "Lead pipe", "Revolver", "Candlestick", "Knife", "Wrench"},
+        ClueCardType.WEAPON: {"Rope", "Lead Pipe", "Revolver", "Candlestick", "Knife", "Wrench"},
         ClueCardType.ROOM: {"Billiard Room", "Ballroom", "Lounge", "Kitchen", "Conservatory", "Library"}
         }
 
@@ -80,6 +80,8 @@ class Game:
         for t in ClueCardType:
             for c in self.clue_cards[t]:
                 self.cards.add(Card(c, t))
+
+        self.cards_in_the_file = set()
 
         self.haves = []
         self.shows = []
@@ -140,6 +142,15 @@ class Game:
                 if s.player == player and card in s.cards:
                     s.remove_card(card)
                 self.pop_show(s)
+            # 2. Check if card is added to file.
+            for c in self.cards:
+                players_passing = set()
+                for h in self.haves:
+                    if h.card == c and (not h.yesno):
+                        players_passing.add(h.player)
+                if len(players_passing) == len(self.players):
+                    self.cards_in_the_file.add(c)
+
 
     def record_show(self, player, cards):
         new_show = Show(player, cards)
