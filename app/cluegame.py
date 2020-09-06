@@ -169,7 +169,7 @@ class Game:
     def pop_show(self, show):
         if (not show.is_void) and (len(show.cards) == 1):
             show.is_void = True
-            self.haves.append(Have(show.player, show.cards.pop(), True))
+            self.record_have(show.player, show.cards.pop(), True)
 
     # Return the known cards a player has, or does not have.
     def player_known_cards(self, player, yesno):

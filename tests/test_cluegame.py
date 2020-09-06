@@ -96,3 +96,9 @@ def test_simple_game(clue_game):
         if h.yesno:
             having_cards_dicts.append({"player": h.player.name, "card": h.card.name})
     assert {"player": "Greg", "card": "Rope"} in having_cards_dicts
+    unhaving_cards_dicts = []
+    for h in game.haves:
+        if not h.yesno:
+            unhaving_cards_dicts.append({"player": h.player.name, "card": h.card.name})
+    assert {"player": "Cynthia", "card": "Rope"} in unhaving_cards_dicts
+    assert {"player": "Adam", "card": "Ballroom"} in unhaving_cards_dicts
