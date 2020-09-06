@@ -1,6 +1,6 @@
-from enum import Enum
+import enum
 
-class ClueCardType(Enum):
+class ClueCardType(enum.Enum):
     PERSON = "Person"
     WEAPON = "Weapon"
     ROOM = "Room"
