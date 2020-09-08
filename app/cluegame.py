@@ -1,9 +1,13 @@
 import enum
+import pickle
+import os
+
 
 class ClueCardType(enum.Enum):
     PERSON = "Person"
     WEAPON = "Weapon"
     ROOM = "Room"
+
 
 class Player:
     def __init__(self, name, hand_size):
@@ -20,7 +24,9 @@ class Player:
         return hash(self.name)
 
     def __repr__(self):
-        return "Player(Name={}, Hand size={})".format(self.name, self.hand_size)
+        return "Player(Name={}, Hand size={})".format(
+                self.name, self.hand_size)
+
 
 class Card:
     def __init__(self, name, card_type):
@@ -39,6 +45,7 @@ class Card:
     def __repr__(self):
         return "Card(Name={}, Type={})".format(self.name, self.card_type)
 
+
 # A yes/no: Does this player have this card?
 # Created when this fact is known.
 class Have:
@@ -53,6 +60,11 @@ class Have:
         else:
             return NotImplemented
 
+    def __repr__(self):
+        return "Have(Player={}, Card={}, {})".format(
+                self.player, self.card, self.yesno)
+
+
 # A 4-way relationship between a player and 3 cards.
 # Created when a player shows a card to someone else.
 class Show:
@@ -64,15 +76,42 @@ class Show:
     def remove_card(self, card):
         self.cards.remove(card)
 
+    def __repr__(self):
+        return "Show(Player={}, Cards={}, Void={})".format(
+                self.player, self.cards, self.is_void)
+
+
 class Game:
     clue_cards = {
-        ClueCardType.PERSON: {"Colonel Mustard", "Miss Scarlet", "Professor Plum", "Mrs. White", "Mr. Green", "Mrs. Peacock"},
-        ClueCardType.WEAPON: {"Rope", "Lead Pipe", "Revolver", "Candlestick", "Knife", "Wrench"},
-        ClueCardType.ROOM: {"Billiard Room", "Ballroom", "Lounge", "Kitchen", "Conservatory", "Library"}
+        ClueCardType.PERSON: {
+            "Colonel Mustard",
+            "Miss Scarlet",
+            "Professor Plum",
+            "Mrs. White",
+            "Mr. Green",
+            "Mrs. Peacock"
+        },
+        ClueCardType.WEAPON: {
+            "Rope",
+            "Lead Pipe",
+            "Revolver",
+            "Candlestick",
+            "Knife",
+            "Wrench"
+        },
+        ClueCardType.ROOM: {
+            "Billiard Room",
+            "Ballroom",
+            "Lounge",
+            "Kitchen",
+            "Conservatory",
+            "Library"
         }
+    }
 
     def __init__(self, myself, other_players):
         self.myself = myself
+        self.other_players = other_players
         self.players = other_players.copy()
         self.players.add(myself)
 
@@ -96,7 +135,10 @@ class Game:
                 if h.yesno == prospective_have.yesno:
                     return  # Assume this has all been done already; move on.
                 else:
-                    raise ValueError("Cannot mark Have for {} and {} as {}; the opposite is already marked!".format(player, card, yesno))
+                    raise ValueError("Cannot mark Have for " +
+                                     "{} and {} as {}; ".format(
+                                                    player, card, yesno) +
+                                     "the opposite is already marked!")
 
         # Now record it!
         self.haves.append(prospective_have)
@@ -109,7 +151,8 @@ class Game:
                 if other_p != player:
                     self.record_have(other_p, card, False)
 
-            # 2. If all the player's cards are accounted for, mark passes for all other cards.
+            # 2. If all the player's cards are accounted for, mark passes for
+            # all other cards.
             player_known_cards = self.player_known_cards(player, True)
             if len(player_known_cards) == player.hand_size:
                 for other_c in self.cards:
@@ -126,18 +169,20 @@ class Game:
             for card_name in self.clue_cards[card.card_type]:
                 cards_of_type_total.add(self.get_card(card_name))
             if len(cards_of_type_located) == len(cards_of_type_total) - 1:
-                remaining_card = (cards_of_type_total - cards_of_type_located).pop()
+                remaining_card = (
+                        cards_of_type_total - cards_of_type_located).pop()
                 for p in self.players:
                     self.record_have(p, remaining_card, False)
 
-            # 4. If the player has this card in any of their "shows", void those shows.
+            # 4. If the player has this card in any of their "shows", void
+            # those shows.
             for s in self.shows:
                 if s.player == player and card in s.cards:
                     s.is_void = True
 
         else:  # we know player does not have card
-            # 1. If the passing player & card are in any Shows together, try to "pop"
-            #    them.
+            # 1. If the passing player & card are in any Shows together, try to
+            # "pop" them.
             for s in self.shows:
                 if s.player == player and card in s.cards:
                     s.remove_card(card)
@@ -150,7 +195,6 @@ class Game:
                         players_passing.add(h.player)
                 if len(players_passing) == len(self.players):
                     self.cards_in_the_file.add(c)
-
 
     def record_show(self, player, cards):
         new_show = Show(player, cards)
@@ -183,6 +227,10 @@ class Game:
         for c in cards:
             self.record_have(self.myself, c, True)
 
+        for c in self.cards:
+            if c not in cards:
+                self.record_have(self.myself, c, False)
+
     def get_card(self, name):
         for c in self.cards:
             if c.name == name:
@@ -194,3 +242,21 @@ class Game:
             if p.name == name:
                 return p
         raise ValueError("No such player! {}".format(name))
+
+    def save(self, path):
+        with open(path, 'wb') as dbfile:
+            pickle.dump(self, dbfile)
+
+    def load(obj, path):
+        if os.path.isfile(path):
+            with open(path, 'rb') as dbfile:
+                return pickle.load(dbfile)
+        else:
+            return None
+
+    def delete(obj, path):
+        os.remove(path)
+
+
+Game.load = classmethod(Game.load)
+Game.delete = classmethod(Game.delete)

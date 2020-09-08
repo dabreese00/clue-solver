@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Gameplay</h1>
+    <h2>Game events</h2>
+    <form action="" method="post" novalidate>
+        {{ form_pass.hidden_tag() }}
+        {{ form_pass.player.label }}
+        {{ form_pass.player(size=1) }}<br>
+        {{ form_pass.cards.label }}
+        {{ form_pass.cards(size=1) }}
+        {{ form_pass.submit_pass() }}
+    </form>
+    <form action="" method="post" novalidate>
+        {{ form_show.hidden_tag() }}
+        {{ form_show.player.label }}
+        {{ form_show.player(size=1) }}<br>
+        {{ form_show.cards.label }}
+        {{ form_show.cards(size=1) }}
+        {{ form_show.submit_show() }}
+    </form>
+    <form action="" method="post" novalidate>
+        {{ form_reveal.hidden_tag() }}
+        {{ form_reveal.player.label }}
+        {{ form_reveal.player(size=1) }}<br>
+        {{ form_reveal.card.label }}
+        {{ form_reveal.card(size=1) }}<br>
+        {{ form_reveal.submit_reveal() }}
+    </form>
+    <h2>Game status</h2>
+    <h3>Players</h3>
+    <ul>
+    {% for p in players %}
+        <li>{{ p }}</li>
+    {% endfor %}
+    </ul>
+    <h3>Cards</h3>
+    <ul>
+    {% for c in cards %}
+        <li>{{ c }}</li>
+    {% endfor %}
+    </ul>
+    <h3>Haves</h3>
+    <ul>
+    {% for h in haves %}
+        <li>{{ h }}</li>
+    {% endfor %}
+    </ul>
+    <h3>Shows</h3>
+    <ul>
+    {% for s in shows %}
+        <li>{{ s }}</li>
+    {% endfor %}
+    </ul>
+    <h3>Cards in the file</h3>
+    <ul>
+    {% for c in cards_in_the_file %}
+        <li>{{ c }}</li>
+    {% endfor %}
+    </ul>
+{% endblock %}

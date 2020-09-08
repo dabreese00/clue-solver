@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h1>Delete Game</h1>
+    <p>You have tried to create a new game, but a saved game already exists.</p>
+    <form action="" method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <p>
+        {{ form.confirm.label }}
+        {{ form.confirm() }}
+        {% for error in form.confirm.errors %}
+        <span style="color: red;">[{{ error }}]</span>
+        {% endfor %}
+        </p>
+        <p>{{ form.submit() }}</p>
+{% endblock %}
