@@ -10,6 +10,12 @@ class ClueCardType(enum.Enum):
 
 
 class Player:
+    """Represents a player in the Clue game.
+
+    Instance variables:
+        name: the player's name in real life
+        hand_size: how many cards the player is holding
+    """
     def __init__(self, name, hand_size):
         self.name = name
         self.hand_size = hand_size
@@ -29,6 +35,12 @@ class Player:
 
 
 class Card:
+    """Represents a card in the Clue game.
+
+    Instance variables:
+        name: the card's name
+        type: which type of clue card it is (see enum ClueCardType)
+    """
     def __init__(self, name, card_type):
         self.name = name
         self.card_type = card_type
@@ -49,6 +61,16 @@ class Card:
 # A yes/no: Does this player have this card?
 # Created when this fact is known.
 class Have:
+    """Records a given player's having, or not having, of a given card.
+
+    Public methods:
+        overlaps: check whether two Haves's subjects are the same
+
+    Instance variables:
+        player: the player who is known to have, or not have, the card
+        card:   the card which is known to be had, or not had
+        yesno:  True means the player has it; false, the opposite
+    """
     def __init__(self, player, card, yesno):
         self.player = player
         self.card = card
@@ -68,6 +90,16 @@ class Have:
 # A 4-way relationship between a player and 3 cards.
 # Created when a player shows a card to someone else.
 class Show:
+    """Records that a given player showed one of several given cards.
+
+    Public methods:
+        remove_card: narrows down the Show by removing one of the possibilities
+
+    Instance variables:
+        player:  the player who showed one of the cards
+        cards:   the list of cards of which one was shown
+        is_void: marked True if this Show's info can no longer be used
+    """
     def __init__(self, player, cards):
         self.player = player
         self.cards = cards.copy()  # Shallow copy, avoid mutating input set
@@ -82,6 +114,39 @@ class Show:
 
 
 class Game:
+    """Encapsulates and updates the total state of the game knowledge.
+
+    The Game knows a set of Players and a set of Cards, and provides methods to
+    record any and all Shows and Haves amongst them (which also get stored
+    within the game), while simultaneously checking for, and recording the
+    consequences of, any relevant deductions that follow from each new record.
+
+    The Game also necessarily knows which Player is the user herself.
+
+    Last but not least, the Game keeps track of which Cards are "in the file",
+    meaning the Clue confidential file -- this is how you win folks!
+
+    Public methods:
+        record_have
+        record_show
+        pop_show
+        player_known_cards
+        input_hand
+        get_card
+        get_player
+        save
+        load
+        delete
+
+    Instance variables:
+        myself
+        other_players
+        players
+        cards
+        cards_in_the_file
+        haves
+        shows
+    """
     clue_cards = {
         ClueCardType.PERSON: {
             "Colonel Mustard",
