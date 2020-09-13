@@ -91,16 +91,23 @@ def test_one():
         ]))
 
     filter1 = ClueRelationFilter(get_obj(players, "Cynthia"))
-    filter2 = filter1.add("and", get_obj(cards, "Billiard Room"))
-    filter3 = filter2.add("and", get_obj(cards, "Rope"))
+    filter2 = filter1.add("and", ClueRelationFilter(
+        get_obj(cards, "Billiard Room")))
+    filter3 = filter2.add("and", ClueRelationFilter(
+        get_obj(cards, "Rope")))
 
-    filter4 = filter1.add("or", get_obj(cards, "Billiard Room"))
+    filter4 = filter1.add("or", ClueRelationFilter(
+        get_obj(cards, "Billiard Room")))
+
+    filter5 = filter1.add("not")
 
     assert len(filter1.get(haves)) == 3
     assert len(filter2.get(haves)) == 1
     assert len(filter3.get(haves)) == 0
     assert len(filter4.get(haves)) == 4
+    assert len(filter5.get(haves)) == 1
     assert len(filter1.get(shows)) == 1
     assert len(filter2.get(shows)) == 1
     assert len(filter3.get(shows)) == 1
     assert len(filter4.get(shows)) == 2
+    assert len(filter5.get(shows)) == 2

@@ -33,7 +33,7 @@ def test_simple_show_and_have(clue_game):
             game.get_player('Greg'),
             {
                 game.get_card('Colonel Mustard'),
-                game.get_card('Billiard Room'),
+                game.get_card('Ballroom'),
                 game.get_card('Rope')
             })
 
@@ -43,7 +43,23 @@ def test_simple_show_and_have(clue_game):
             True
             )
 
-    assert game.shows[0].is_void
+    game.record_have(
+            game.get_player('Greg'),
+            game.get_card('Ballroom'),
+            False)
+
+    having_cards_dicts = []
+    for h in game.haves:
+        if h.yesno:
+            having_cards_dicts.append({"player": h.player.name, "card": h.card.name})
+    assert {"player": "Greg", "card": "Rope"} in having_cards_dicts
+    assert len(having_cards_dicts) == 4
+    unhaving_cards_dicts = []
+    for h in game.haves:
+        if not h.yesno:
+            unhaving_cards_dicts.append({"player": h.player.name, "card": h.card.name})
+    assert {"player": "Greg", "card": "Ballroom"} in unhaving_cards_dicts
+
 
 def test_simple_game(clue_game):
     game = clue_game
