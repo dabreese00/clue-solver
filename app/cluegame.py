@@ -114,34 +114,7 @@ class Game:
         relations
     """
 
-    clue_cards = {
-        ClueCardType.PERSON: {
-            "Colonel Mustard",
-            "Miss Scarlet",
-            "Professor Plum",
-            "Mrs. White",
-            "Mr. Green",
-            "Mrs. Peacock"
-        },
-        ClueCardType.WEAPON: {
-            "Rope",
-            "Lead Pipe",
-            "Revolver",
-            "Candlestick",
-            "Knife",
-            "Wrench"
-        },
-        ClueCardType.ROOM: {
-            "Billiard Room",
-            "Ballroom",
-            "Lounge",
-            "Kitchen",
-            "Conservatory",
-            "Library"
-        }
-    }
-
-    def __init__(self, myself, other_players):
+    def __init__(self, clue_cards, myself, other_players):
         """Initializes the game state.
 
         Creates a set of Players and a set of Cards, including which Player is
@@ -153,11 +126,13 @@ class Game:
         initialization, using the input_hand method.
 
         Arguments:
+            clue_cards -- a dict, keyed by ClueCardType, listing all card names
             myself -- a Player representing the user
             other_players -- a list of all other Players in the Game
         """
 
         # Setup the Cards
+        self.clue_cards = clue_cards
         self.cards = set()
         for t in ClueCardType:
             for c in self.clue_cards[t]:

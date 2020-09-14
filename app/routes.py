@@ -1,7 +1,7 @@
 from app import app
 from app.forms import (CreateGameForm, InputHandForm, InputPassForm,
                        InputShowForm, InputRevealForm, DeleteGameForm)
-from app.cluegame import Player, Game, ClueRelationType
+from app.cluegame import Player, Game, ClueRelationType, ClueCardType
 from flask import render_template, redirect, url_for
 import os
 
@@ -25,6 +25,11 @@ def create_game():
             if entry['name'] and entry['hand_size']:
                 other_players.add(Player(entry['name'], entry['hand_size']))
         game = Game(
+                    {
+                        ClueCardType.PERSON: app.config['CLUE_CARDS_PERSONS'],
+                        ClueCardType.WEAPON: app.config['CLUE_CARDS_WEAPONS'],
+                        ClueCardType.ROOM: app.config['CLUE_CARDS_ROOMS']
+                    },
                     Player(
                         form.myself.data["name"],
                         form.myself.data["hand_size"]),

@@ -1,4 +1,4 @@
-from app.cluegame import (Player, ClueRelationType, Game)
+from app.cluegame import (Player, ClueRelationType, Game, ClueCardType)
 import pytest
 
 
@@ -11,7 +11,41 @@ def clue_game():
         other_players.add(Player(p, hand_size))
     myself = Player('David', hand_size)
 
-    return Game(myself, other_players)
+    return Game(
+            {
+                ClueCardType.PERSON:
+                    [
+                        "Colonel Mustard",
+                        "Miss Scarlet",
+                        "Professor Plum",
+                        "Mrs. White",
+                        "Mr. Green",
+                        "Mrs. Peacock"
+                    ],
+                ClueCardType.WEAPON:
+                    [
+                        "Rope",
+                        "Lead Pipe",
+                        "Revolver",
+                        "Candlestick",
+                        "Knife",
+                        "Wrench"
+                    ],
+                ClueCardType.ROOM:
+                    [
+                        "Billiard Room",
+                        "Ballroom",
+                        "Lounge",
+                        "Kitchen",
+                        "Conservatory",
+                        "Library",
+                        "Dining Room",
+                        "Hall",
+                        "Study"
+                    ]
+            },
+            myself,
+            other_players)
 
 
 def test_game_setup(clue_game):

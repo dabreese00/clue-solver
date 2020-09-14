@@ -1,4 +1,6 @@
 Short term:
+- Improve Game API: Interact fully by Player/Card names, without get_ methods.
+- Improve Game API: More intuitive constructor arguments.
 - Improve error handling & data validation in frontend.
 - Design better Game Status display.
 - Make instructions to run locally via Docker?
