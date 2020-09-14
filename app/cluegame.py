@@ -1,3 +1,4 @@
+from app.objectfilter import ObjectFilter
 import enum
 import pickle
 import os
@@ -10,6 +11,12 @@ class ClueCardType(enum.Enum):
     ROOM = "Room"
 
 
+class ClueRelationType(enum.Enum):
+    HAVE = "have"
+    PASS = "pass"
+    SHOW = "show"
+
+
 Player = collections.namedtuple('Player', 'name hand_size')
 Player.__doc__ += ': A player in the Clue game'
 Player.name.__doc__ = 'A name by which this player is identified'
@@ -19,12 +26,6 @@ Card = collections.namedtuple('Card', 'name card_type')
 Card.__doc__ += ': A card in the Clue game'
 Card.name.__doc__ = 'A name by which this card is identified'
 Card.card_type.__doc__ = 'Which ClueCardType this card belongs to'
-
-
-class ClueRelationType(enum.Enum):
-    HAVE = "have"
-    PASS = "pass"
-    SHOW = "show"
 
 
 class ClueRelation(collections.namedtuple(
@@ -49,6 +50,27 @@ ClueRelation.player.__doc__ = \
     'The Player that this relation pertains to'
 ClueRelation.cards.__doc__ = \
     'The list of Cards (possible singleton) that this relation pertains to'
+
+
+class ClueRelationFilter(ObjectFilter):
+    def match(self, relation):
+        """Recursively check if relation matches all filter statements.
+
+        Arguments:
+            relation -- the relation to check
+        """
+        if self.statement == "and":
+            return self.left.match(relation) and self.right.match(relation)
+        elif self.statement == "or":
+            return self.left.match(relation) or self.right.match(relation)
+        elif self.statement == "not":
+            return not self.left.match(relation)
+        elif self.statement == "all":
+            return True
+        elif self.statement in ClueRelationType:
+            return relation.rel_type == self.statement
+        else:
+            return self.statement in relation
 
 
 class Game:
@@ -336,107 +358,3 @@ class Game:
 
 Game.load = classmethod(Game.load)
 Game.delete = classmethod(Game.delete)
-
-
-# TODO: Make this class immutable?
-class ClueRelationFilter:
-    """Represents a filter to match Clue relations.
-
-    The filter can be used to search for Clue relations who have members listed
-    in the filter statement, and/or who match the filter statement magic string
-    meaning (see below).
-
-    The filter is represented as a binary tree structure; this allows building
-    compound filters by joining independent filters using a logical operator.
-
-    Meanings of magic string values for `statement`:
-        and, or, not -- child filters combined using a logical operator
-        all          -- no filter; query will return all elements
-        have         -- matches only True Haves
-        pass         -- matches only False Haves a.k.a. passes
-
-    Public methods:
-        match      -- check a single relation against the filter
-        add        -- add a filter condition to the query using "and"
-        get        -- query a list and return results based on the filter
-
-    Instance variables:
-        left       -- left child filter
-        right      -- right child filter
-        statement  -- this node's filter component
-    """
-    def __init__(self, statement=None):
-        """Initialize a filter.
-
-        Arguments:
-            statement -- a relationship member, or a magic string
-                (see class docstring above)
-        """
-        self.left = None
-        self.right = None
-        self.statement = statement
-
-    def match(self, relation):
-        """Recursively check if relation matches all filter statements.
-
-        Arguments:
-            statement -- a relationship member, or a magic string
-                (see ClueRelationFilter class docstring above)
-        """
-        if self.statement == "and":
-            return self.left.match(relation) and self.right.match(relation)
-        elif self.statement == "or":
-            return self.left.match(relation) or self.right.match(relation)
-        elif self.statement == "not":
-            return not self.left.match(relation)
-        elif self.statement == "all":
-            return True
-        elif self.statement in ClueRelationType:
-            return relation.rel_type == self.statement
-        else:
-            return self.statement in relation
-
-    def add(self, op="and", other_filter=None):
-        """Combine with another filter to create a compound filter.
-
-        Arguments:
-            op           -- logical operator to combine
-            other_filter
-        """
-        if op in ["and", "or", "not"]:
-            new = ClueRelationFilter(op)
-            new.left = self
-            new.right = other_filter
-            return new
-        else:
-            raise ValueError("Specified op was {}; ".format(op) +
-                             "expected 'and', 'or', or 'not'")
-
-    def __add__(self, other):
-        """Combine with another filter to create a compound "and" filter."""
-        new = ClueRelationFilter("and")
-        new.left = self
-        new.right = other
-        return new
-
-    def __truediv__(self, other):
-        """Combine with another filter to create a compound "or" filter."""
-        new = ClueRelationFilter("or")
-        new.left = self
-        new.right = other
-        return new
-
-    def __neg__(self):
-        """Invert filter, creating a compound "not" filter."""
-        new = ClueRelationFilter("not")
-        new.left = self
-        new.right = None
-        return new
-
-    def get(self, relations_list):
-        """Return all from relations_list that match all filter statements."""
-        matching_relations = []
-        for r in relations_list:
-            if self.match(r):
-                matching_relations.append(r)
-        return matching_relations

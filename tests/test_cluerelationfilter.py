@@ -94,15 +94,15 @@ def test_one():
         ]))
 
     filter1 = ClueRelationFilter(get_obj(players, "Cynthia"))
-    filter2 = filter1.add("and", ClueRelationFilter(
+    filter2 = filter1.compound("and", ClueRelationFilter(
         get_obj(cards, "Billiard Room")))
-    filter3 = filter2.add("and", ClueRelationFilter(
+    filter3 = filter2.compound("and", ClueRelationFilter(
         get_obj(cards, "Rope")))
 
-    filter4 = filter1.add("or", ClueRelationFilter(
+    filter4 = filter1.compound("or", ClueRelationFilter(
         get_obj(cards, "Billiard Room")))
 
-    filter5 = filter1.add("not")
+    filter5 = filter1.compound("not")
 
     assert len(filter1.get(haves)) == 3
     assert len(filter2.get(haves)) == 1
