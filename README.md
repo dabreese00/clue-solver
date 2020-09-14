@@ -27,18 +27,15 @@ impossible to re-open it later.
 
 The backend lives in the file `src/app/cluegame.py`.  The classes in this file
 are designed to model everything one would write down on one's Clue game sheet.
+Essentially, this means: players, cards, and several types of relationships
+between them (see [Theory](#theory), below, for more details).
 
-I chose not to use SQL, at least for the initial implementation.  After
-planning out the data structure and inference logic (see "Theory", below), I
-was curious whether I could make the code more concise and elegant by just
-using plain custom Python classes.  But so far, due to the lack of pre-built
-querying and my own impatience and/or inexperience, I've found myself hacking
-together gobs of custom for-loops (blech) to answer even the most basic
-questions about the game state.  The internals are thus a spaghetti mess.  If
-this project ever goes forward much further, my shame will force me to decide
-whether to clean it up by refactoring out some custom-built query functions (or
-perhaps some even slicker tricks that I can't think of now), or just migrate to
-SQL and have the querying handed to me on a platter like a sane person.
+I chose not to use SQL, at least for the initial implementation.  I was curious
+whether I could make the code more concise and elegant by just using plain
+custom Python classes.  So far, this has not come to fruition; the data
+structures are simple enough to create, but the methods I've had to develop to
+query them are still sorely lacking in usability and readability, I'm afraid.
+We will see at what point I may end up just giving up and migrating to SQL.
 
 It also needs better unit tests.  But I think it works.
 
