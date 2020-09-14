@@ -1,6 +1,7 @@
 import enum
 import pickle
 import os
+import collections
 
 
 class ClueCardType(enum.Enum):
@@ -9,53 +10,8 @@ class ClueCardType(enum.Enum):
     ROOM = "Room"
 
 
-class Player:
-    """Represents a player in the Clue game.
-
-    Instance variables:
-        name: the player's name in real life
-        hand_size: how many cards the player is holding
-    """
-    def __init__(self, name, hand_size):
-        self.name = name
-        self.hand_size = hand_size
-
-    def __eq__(self, other):
-        if type(other) is type(self):
-            return self.name == other.name
-        else:
-            return NotImplemented
-
-    def __hash__(self):
-        return hash(self.name)
-
-    def __repr__(self):
-        return "Player(Name={}, Hand size={})".format(
-                self.name, self.hand_size)
-
-
-class Card:
-    """Represents a card in the Clue game.
-
-    Instance variables:
-        name: the card's name
-        type: which type of clue card it is (see enum ClueCardType)
-    """
-    def __init__(self, name, card_type):
-        self.name = name
-        self.card_type = card_type
-
-    def __eq__(self, other):
-        if type(other) is type(self):
-            return self.name == other.name
-        else:
-            return NotImplemented
-
-    def __hash__(self):
-        return hash(self.name)
-
-    def __repr__(self):
-        return "Card(Name={}, Type={})".format(self.name, self.card_type)
+Player = collections.namedtuple('Player', 'name hand_size')
+Card = collections.namedtuple('Card', 'name card_type')
 
 
 # A yes/no: Does this player have this card?
