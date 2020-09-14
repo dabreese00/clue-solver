@@ -4,12 +4,6 @@ import pytest
 
 @pytest.fixture
 def clue_game():
-    hand_size = 3
-    player_names = {'Adam', 'Cynthia', 'Greg', 'David'}
-    players = set()
-    for p in player_names:
-        players.add((p, hand_size))
-
     return Game(
             [
                 "Colonel Mustard",
@@ -38,7 +32,13 @@ def clue_game():
                 "Hall",
                 "Study"
             ],
-            players)
+            {
+                ('Adam', 5),
+                ('Cynthia', 5),
+                ('Greg', 4),
+                ('David', 4)
+            }
+        )
 
 
 def test_game_setup(clue_game):
@@ -54,7 +54,8 @@ def test_simple_show_and_have(clue_game):
     myself = 'David'
     initial_hand = ['Colonel Mustard',
                     'Miss Scarlet',
-                    'Billiard Room']
+                    'Billiard Room',
+                    'Mr. Green']
     for c in initial_hand:
         game.record_have(myself, c)
 
@@ -81,11 +82,84 @@ def test_simple_show_and_have(clue_game):
             unhaving_cards_dicts.append({
                 "player": r.player.name,
                 "card": r.cards[0].name})
-    assert len(having_cards_dicts) == 4
+    assert len(having_cards_dicts) == 5
     assert {"player": "Greg", "card": "Rope"} in having_cards_dicts
     assert {"player": "Greg", "card": "Ballroom"} in unhaving_cards_dicts
     assert {"player": "David", "card": "Rope"} in unhaving_cards_dicts
     assert {"player": "David", "card": "Ballroom"} in unhaving_cards_dicts
+    having_cards_dicts = []
+    unhaving_cards_dicts = []
+
+
+def test_player_whole_hand_known(clue_game):
+    game = clue_game
+
+    myself = 'David'
+    initial_hand = ['Colonel Mustard',
+                    'Miss Scarlet',
+                    'Billiard Room',
+                    'Mr. Green']
+    for c in initial_hand:
+        game.record_have(myself, c)
+
+    for c in ['Professor Plum', 'Knife', 'Library', 'Kitchen', 'Rope']:
+        game.record_have('Adam', c)
+
+    having_cards_dicts = []
+    unhaving_cards_dicts = []
+    for r in game.relations:
+        if r.rel_type == ClueRelationType.HAVE:
+            having_cards_dicts.append({
+                "player": r.player.name,
+                "card": r.cards[0].name})
+        elif r.rel_type == ClueRelationType.PASS:
+            unhaving_cards_dicts.append({
+                "player": r.player.name,
+                "card": r.cards[0].name})
+    assert {"player": "David", "card": "Study"} in unhaving_cards_dicts
+    assert {"player": "David", "card": "Mrs. White"} in unhaving_cards_dicts
+    assert {"player": "David", "card": "Mrs. Peacock"} in unhaving_cards_dicts
+    assert {"player": "Adam", "card": "Study"} in unhaving_cards_dicts
+    assert {"player": "Adam", "card": "Mrs. White"} in unhaving_cards_dicts
+    assert {"player": "Adam", "card": "Mrs. Peacock"} in unhaving_cards_dicts
+    having_cards_dicts = []
+    unhaving_cards_dicts = []
+
+
+def test_card_type_completed(clue_game):
+    game = clue_game
+
+    myself = 'David'
+    initial_hand = ['Colonel Mustard',
+                    'Miss Scarlet',
+                    'Billiard Room',
+                    'Mr. Green']
+    for c in initial_hand:
+        game.record_have(myself, c)
+
+    for c in ['Professor Plum', 'Mrs. White']:
+        game.record_have('Adam', c)
+
+    assert 'Mrs. Peacock' in [c.name for c in game.cards_in_the_file]
+    having_cards_dicts = []
+    unhaving_cards_dicts = []
+    for r in game.relations:
+        if r.rel_type == ClueRelationType.HAVE:
+            having_cards_dicts.append({
+                "player": r.player.name,
+                "card": r.cards[0].name})
+        elif r.rel_type == ClueRelationType.PASS:
+            unhaving_cards_dicts.append({
+                "player": r.player.name,
+                "card": r.cards[0].name})
+    assert {"player": "David", "card": "Study"} in unhaving_cards_dicts
+    assert {"player": "David", "card": "Mrs. White"} in unhaving_cards_dicts
+    assert {"player": "David", "card": "Mrs. Peacock"} in unhaving_cards_dicts
+    assert {"player": "Adam", "card": "Study"} not in unhaving_cards_dicts
+    assert {"player": "Adam", "card": "Mrs. White"} in having_cards_dicts
+    assert {"player": "Adam", "card": "Mrs. Peacock"} in unhaving_cards_dicts
+    having_cards_dicts = []
+    unhaving_cards_dicts = []
 
 
 def test_simple_game(clue_game):
@@ -94,7 +168,8 @@ def test_simple_game(clue_game):
     myself = 'David'
     initial_hand = ['Colonel Mustard',
                     'Miss Scarlet',
-                    'Billiard Room']
+                    'Billiard Room',
+                    'Mr. Green']
     for c in initial_hand:
         game.record_have(myself, c)
 
@@ -141,3 +216,5 @@ def test_simple_game(clue_game):
     assert {"player": "Greg", "card": "Rope"} in having_cards_dicts
     assert {"player": "Cynthia", "card": "Rope"} in unhaving_cards_dicts
     assert {"player": "Adam", "card": "Ballroom"} in unhaving_cards_dicts
+    having_cards_dicts = []
+    unhaving_cards_dicts = []

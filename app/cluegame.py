@@ -126,14 +126,14 @@ class Game:
         """
 
         # Setup the Cards
-        self.clue_cards = {
+        clue_cards = {
             ClueCardType.PERSON: clue_cards_persons,
             ClueCardType.WEAPON: clue_cards_weapons,
             ClueCardType.ROOM: clue_cards_rooms
         }
         self.cards = set()
         for t in ClueCardType:
-            for c in self.clue_cards[t]:
+            for c in clue_cards[t]:
                 self.cards.add(Card(c, t))
 
         # Setup the Players
@@ -263,14 +263,14 @@ class Game:
 
     def __deduce_player_passes_from_known_whole_hand(self, player):
         """If all player's cards are known, mark passes for all other cards."""
-        player_haves = (
+        player_cards = [r.cards[0] for r in (
                 ClueRelationFilter(player) +
                 ClueRelationFilter(ClueRelationType.HAVE)
-            ).get(self.relations)
+            ).get(self.relations)]
 
-        if len(player_haves) == player.hand_size:
+        if len(player_cards) == player.hand_size:
             for other_c in self.cards:
-                if other_c not in [r.cards[0] for r in player_haves]:
+                if other_c not in player_cards:
                     self.record_pass(player, other_c)
 
     def __deduce_card_passes_from_cardtype_completion(self, cluecardtype):
@@ -279,13 +279,14 @@ class Game:
         If we know which player has every card of this type but 1, mark passes
         for all players for the remaining card.
         """
-        cards_of_type_located = (
+        cards_of_type_located = [r.cards[0] for r in (
                 ClueRelationFilter(cluecardtype) +
                 ClueRelationFilter(ClueRelationType.HAVE)
-            ).get(self.relations)
+            ).get(self.relations)]
 
         cards_of_type_total = []
-        for card_name in self.clue_cards[cluecardtype]:
+        for card_name in [c.name for c in
+                          self.cards if c.card_type == cluecardtype]:
             cards_of_type_total.append(
                 self.__normalize_input_player_or_card(card_name, self.cards))
 
