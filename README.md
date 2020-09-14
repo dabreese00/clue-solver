@@ -40,7 +40,8 @@ queries about these relations.
 
 It also needs better unit tests.  But I think it works.
 
-For some examples of the API usage, see the tests for the Game class.
+The high-level Game API is probably somewhat stable now.  For some examples of
+the API usage, see the tests for the Game class.
 
 The backend can operate fine without any persistence, but it does implement
 persistence methods (for the web interface's benefit) using `pickle`.

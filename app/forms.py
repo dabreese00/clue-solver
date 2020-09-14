@@ -9,13 +9,13 @@ class CreatePlayerForm(FlaskForm):
 
 
 class CreateGameForm(FlaskForm):
-    myself = FormField(CreatePlayerForm)
     player = FieldList(FormField(CreatePlayerForm),
-                       min_entries=5, max_entries=5, label="Other Players")
+                       min_entries=6, max_entries=6, label="Players")
     submit = SubmitField()
 
 
 class InputHandForm(FlaskForm):
+    myself = SelectField('Myself')
     cards = SelectMultipleField('My cards')
     submit = SubmitField()
 

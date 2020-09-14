@@ -79,26 +79,22 @@ class Game:
     The Game instance knows the following:
         - a set of Cards (self.cards)
         - a set of Players (self.players)
-        - which Player represents the user (self.myself)
         - all known ClueRelations between Players and Cards (self.relations)
         - which Cards are "in the file", meaning the Clue confidential file --
           this is how you win folks! (self.cards_in_the_file)
 
-    The Game instance provides methods to record new ClueRelations as they
-    become known.  These methods also recursively check for and record the
+    The Game instance provides public methods to record new ClueRelations as
+    they become known; these methods also recursively check for and record the
     consequences of any deductions that follow from each newly-discovered
     relation.
 
-    There are also lightweight methods to query the above state, and
-    save/load/delete methods to handle persisting the game state.  (For more
-    powerful querying of ClueRelations, see the ClueRelationFilter class.)
+    There are also save/load/delete methods to handle persisting the game
+    state.
 
     Public methods:
-        record_have_pass
+        record_have
+        record_pass
         record_show
-        input_hand
-        get_card
-        get_player
         save
 
     Class methods:
@@ -106,43 +102,44 @@ class Game:
         delete
 
     Instance variables:
-        myself
-        other_players
         players
         cards
         cards_in_the_file
         relations
     """
 
-    def __init__(self, clue_cards, myself, other_players):
+    def __init__(self,
+                 clue_cards_persons,
+                 clue_cards_weapons,
+                 clue_cards_rooms,
+                 players):
         """Initializes the game state.
 
-        Creates a set of Players and a set of Cards, including which Player is
-        the user.  All other instance variables are initialized to empty.
-
-        Note: Even though the contents of the user's own hand would typically
-        be already known at game start, too, this set of Player-Card
-        relationships is currently recorded separately, after game
-        initialization, using the input_hand method.
+        Creates a set of Players and a set of Cards.  All other instance
+        variables are initialized to empty.
 
         Arguments:
-            clue_cards -- a dict, keyed by ClueCardType, listing all card names
-            myself -- a Player representing the user
-            other_players -- a list of all other Players in the Game
+            clue_cards_persons -- a list of Person card names to play with
+            clue_cards_weapons -- a list of Weapon card names to play with
+            clue_cards_rooms -- a list of Room card names to play with
+            players -- a list of tuples representing all Players in the Game
         """
 
         # Setup the Cards
-        self.clue_cards = clue_cards
+        self.clue_cards = {
+            ClueCardType.PERSON: clue_cards_persons,
+            ClueCardType.WEAPON: clue_cards_weapons,
+            ClueCardType.ROOM: clue_cards_rooms
+        }
         self.cards = set()
         for t in ClueCardType:
             for c in self.clue_cards[t]:
                 self.cards.add(Card(c, t))
 
         # Setup the Players
-        self.myself = myself
-        self.other_players = other_players
-        self.players = other_players.copy()
-        self.players.add(myself)
+        self.players = set()
+        for p in players:
+            self.players.add(Player._make(p))
 
         for p in self.players:
             for c in self.cards:
@@ -166,14 +163,62 @@ class Game:
                 cards_in_the_file.add(c)
         return cards_in_the_file
 
-    def record_have_pass(self, rel_type, player, card):
-        """Record a HAVE or PASS relation, and make deductions accordingly.
+    def record_have(self, player, card):
+        """Record a HAVE relation, and make deductions accordingly."""
+        # Allow to pass arguments by object or by name
+        player = self.__normalize_input_player_or_card(player, self.players)
+        card = self.__normalize_input_player_or_card(card, self.cards)
+
+        new_have = self.__generate_valid_have_pass(
+            ClueRelationType.HAVE, player, card)
+        if new_have:
+            self.relations.append(new_have)
+            self.__deduce_other_player_passes_from_have(player, card)
+            self.__deduce_player_passes_from_known_whole_hand(player)
+            self.__deduce_card_passes_from_cardtype_completion(card.card_type)
+
+    def record_pass(self, player, card):
+        """Record a PASS relation, and make deductions accordingly."""
+        # Allow to pass arguments by object or by name
+        player = self.__normalize_input_player_or_card(player, self.players)
+        card = self.__normalize_input_player_or_card(card, self.cards)
+
+        new_pass = self.__generate_valid_have_pass(
+            ClueRelationType.PASS, player, card)
+        if new_pass:
+            self.relations.append(new_pass)
+            matching_shows = (
+                    ClueRelationFilter(player) +
+                    ClueRelationFilter(card) +
+                    ClueRelationFilter(ClueRelationType.SHOW)
+                ).get(self.relations)
+            for s in matching_shows:
+                self.__deduce_have_from_show(s)
+
+    def record_show(self, player, cards):
+        """Record a SHOW relation, and make deductions accordingly."""
+        # Allow to pass arguments by object or by name
+        player = self.__normalize_input_player_or_card(player, self.players)
+        my_cards = []
+        for c in cards:
+            my_cards.append(
+                self.__normalize_input_player_or_card(c, self.cards))
+        cards = my_cards
+
+        new_show = self.__generate_valid_show(player, cards)
+        if new_show:
+            self.relations.append(new_show)
+            self.__deduce_have_from_show(new_show)
+
+    def __generate_valid_have_pass(self, rel_type, player, card):
+        """Record a HAVE or PASS relation.
 
         Arguments:
             rel_type -- ClueRelationType.HAVE or .PASS
             player   -- the Player who has (or not) the card
             card     -- the Card which is had (or not)
         """
+        # Catch any overlapping relations -- Don't record it!
         matching_haves_passes = (
                 ClueRelationFilter(player) +
                 ClueRelationFilter(card) +
@@ -187,48 +232,34 @@ class Game:
             if h.rel_type == rel_type:
                 return  # Ignore attempted duplicate record.
             else:
-                raise ValueError("Cannot mark Relation; " +
+                raise ValueError("Cannot mark Relation {} {} {}; ".format(
+                                 rel_type, player, card) +
                                  "the opposite is already marked!")
 
         # Now record it!
-        self.relations.append(ClueRelation(
+        return ClueRelation(
             rel_type=rel_type,
             player=player,
-            cards=[card]))
+            cards=[card])
 
-        # Finally, make and record any deductions.
-        if rel_type == ClueRelationType.HAVE:
-            for other_p in self.players:
-                if other_p != player:
-                    self.record_have_pass(
-                        rel_type=ClueRelationType.PASS,
-                        player=other_p,
-                        card=card)
-            self.__deduce_player_passes_from_known_whole_hand(player)
-            self.__deduce_card_passes_from_cardtype_completion(card.card_type)
-
-        else:
-            matching_shows = (
-                    ClueRelationFilter(player) +
-                    ClueRelationFilter(card) +
-                    ClueRelationFilter(ClueRelationType.SHOW)
-                ).get(self.relations)
-            for s in matching_shows:
-                self.__pop_show(s)
-
-    def record_show(self, player, cards):
-        """Record a SHOW relation, and make deductions accordingly.
+    def __generate_valid_show(self, player, cards):
+        """Record a SHOW relation.
 
         Arguments:
-            player -- the player for the Show; see Show class
-            cards  -- the cards for the Show; see Show class
+            player   -- the Player who showed the cards
+            cards     -- the Card which were shown
         """
         new_show = ClueRelation(
             rel_type=ClueRelationType.SHOW,
             player=player,
             cards=cards)
-        self.relations.append(new_show)
-        self.__pop_show(new_show)
+        return new_show
+
+    def __deduce_other_player_passes_from_have(self, player, card):
+        """If player has card, all other players must not."""
+        for other_p in self.players:
+            if other_p != player:
+                self.record_pass(other_p, card)
 
     def __deduce_player_passes_from_known_whole_hand(self, player):
         """If all player's cards are known, mark passes for all other cards."""
@@ -240,10 +271,7 @@ class Game:
         if len(player_haves) == player.hand_size:
             for other_c in self.cards:
                 if other_c not in [r.cards[0] for r in player_haves]:
-                    self.record_have_pass(
-                        rel_type=ClueRelationType.PASS,
-                        player=player,
-                        card=other_c)
+                    self.record_pass(player, other_c)
 
     def __deduce_card_passes_from_cardtype_completion(self, cluecardtype):
         """If all cards but 1 of this type are accounted for, mark passes.
@@ -258,7 +286,8 @@ class Game:
 
         cards_of_type_total = []
         for card_name in self.clue_cards[cluecardtype]:
-            cards_of_type_total.append(self.get_card(card_name))
+            cards_of_type_total.append(
+                self.__normalize_input_player_or_card(card_name, self.cards))
 
         if len(cards_of_type_located) == len(cards_of_type_total) - 1:
             remaining_card = (
@@ -266,12 +295,9 @@ class Game:
                     set(cards_of_type_located)
                 ).pop()
             for p in self.players:
-                self.record_have_pass(
-                    rel_type=ClueRelationType.PASS,
-                    player=p,
-                    card=remaining_card)
+                self.record_pass(p, remaining_card)
 
-    def __pop_show(self, show):
+    def __deduce_have_from_show(self, show):
         """If show has 2 passed cards and none had, deduce & record a Have."""
         q = ClueRelationFilter()
         for c in show.cards:
@@ -286,32 +312,26 @@ class Game:
             unpassed_cards = set(show.cards) - set(passed_cards)
             if len(unpassed_cards) == 1:
                 for c in unpassed_cards:
-                    self.record_have_pass(
-                        rel_type=ClueRelationType.HAVE,
-                        player=show.player,
-                        card=c)
+                    self.record_have(show.player, c)
 
-    def input_hand(self, cards):
-        """Records 3 Cards as belonging to the self.myself Player."""
-        for c in cards:
-            self.record_have_pass(
-                rel_type=ClueRelationType.HAVE,
-                player=self.myself,
-                card=c)
+    def __normalize_input_player_or_card(self, obj, lst):
+        """Returns a matching member of a list if possible.
 
-    def get_card(self, name):
-        """Returns a Card object from the Game's list, by name."""
-        for c in self.cards:
-            if c.name == name:
-                return c
-        raise ValueError("No such card! {}".format(name))
+        Arguments:
+            obj -- a Player, Card, or a name (string)
+            lst -- a list of Players or Cards
 
-    def get_player(self, name):
-        """Returns a Player object from the Game's list, by name."""
-        for p in self.players:
-            if p.name == name:
-                return p
-        raise ValueError("No such player! {}".format(name))
+        Returns:
+            a Player or Card from the list, matching obj
+        """
+        if obj in lst:
+            return obj
+        else:
+            my_obj = next(o for o in lst if o.name == obj)
+            if my_obj == StopIteration:
+                raise ValueError("No such player or card! {}".format(obj))
+            else:
+                return my_obj
 
     def save(self, path):
         """Persists the Game state to a file."""
