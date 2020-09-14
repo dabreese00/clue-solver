@@ -1,9 +1,7 @@
 Short term:
-- Finish documenting backend classes and methods.
 - Improve error handling & data validation in frontend.
 - Design better Game Status display.
 - Make instructions to run locally via Docker?
-- Clean up spaghetti methods in Game class.
 
 Long term (if we go that far):
 - Add ability to explicitly load saved game from homepage.

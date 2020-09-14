@@ -278,7 +278,11 @@ class Game:
                     self.record_have(player, other_c, False)
 
     def __deduce_card_passes_from_cardtype_completion(self, cluecardtype):
-        """If all cards but 1 of this type are accounted for, mark passes."""
+        """If all cards but 1 of this type are accounted for, mark passes.
+
+        If we know which player has every card of this type but 1, mark passes
+        for all players for the remaining card.
+        """
         cards_of_type_located = set(ClueRelationFilter(
             cluecardtype).get(self.haves))
         cards_of_type_total = set()
@@ -299,7 +303,7 @@ class Game:
                 self.cards_in_the_file.add(c)
 
     def __pop_show(self, show):
-        # Query to list any Haves that overlap with the Show.
+        """If show has 2 passed cards and none had, deduce & record a Have."""
         q = ClueRelationFilter()
         for c in show.cards:
             q = q.add("or", ClueRelationFilter(c))
@@ -363,18 +367,47 @@ Game.delete = classmethod(Game.delete)
 class ClueRelationFilter:
     """Represents a filter to match Clue relations.
 
+    The filter can be used to search for Clue relations who have members listed
+    in the filter statement, and/or who match the filter statement magic string
+    meaning (see below).
+
+    The filter is represented as a binary tree structure; this allows building
+    compound filters by joining independent filters using a logical operator.
+
+    Meanings of magic string values for `statement`:
+        and, or, not -- child filters combined using a logical operator
+        all          -- no filter; query will return all elements
+        have         -- matches only True Haves
+        pass         -- matches only False Haves a.k.a. passes
+
     Public methods:
         match      -- check a single relation against the filter
         add        -- add a filter condition to the query using "and"
         get        -- query a list and return results based on the filter
+
+    Instance variables:
+        left       -- left child filter
+        right      -- right child filter
+        statement  -- this node's filter component
     """
     def __init__(self, statement=None):
+        """Initialize a filter.
+
+        Arguments:
+            statement -- a relationship member, or a magic string
+                (see class docstring above)
+        """
         self.left = None
         self.right = None
         self.statement = statement
 
     def match(self, relation):
-        """Recursively check if statement(s) are in relation."""
+        """Recursively check if relation matches all filter statements.
+
+        Arguments:
+            statement -- a relationship member, or a magic string
+                (see ClueRelationFilter class docstring above)
+        """
         if self.statement == "and":
             return self.left.match(relation) and self.right.match(relation)
         elif self.statement == "or":
@@ -392,12 +425,23 @@ class ClueRelationFilter:
 
     # TODO: How can this interface be made more simple and Pythonic to use?
     def add(self, op="and", other_filter=None):
-        new = ClueRelationFilter(op)
-        new.left = self
-        new.right = other_filter
-        return new
+        """Combine with another filter to create a compound filter.
+
+        Arguments:
+            op           -- logical operator to combine
+            other_filter
+        """
+        if op in ["and", "or", "not"]:
+            new = ClueRelationFilter(op)
+            new.left = self
+            new.right = other_filter
+            return new
+        else:
+            raise ValueError("Specified op was {}; ".format(op) +
+                             "expected 'and', 'or', or 'not'")
 
     def get(self, relations_list):
+        """Return all from relations_list that match all filter statements."""
         matching_relations = []
         for r in relations_list:
             if self.match(r):
