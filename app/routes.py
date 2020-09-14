@@ -1,7 +1,7 @@
 from app import app
 from app.forms import (CreateGameForm, InputHandForm, InputPassForm,
                        InputShowForm, InputRevealForm, DeleteGameForm)
-from app.cluegame import Player, Game
+from app.cluegame import Player, Game, ClueRelationType
 from flask import render_template, redirect, url_for
 import os
 
@@ -75,26 +75,26 @@ def gameplay_view():
     # ref: https://stackoverflow.com/a/39766205/11686201
     if form_pass.submit_pass.data and form_pass.validate():
         for c in form_pass.cards.data:
-            game.record_have(
-                game.get_player(form_pass.player.data),
-                game.get_card(c),
-                False)
+            game.record_have_pass(
+                rel_type=ClueRelationType.PASS,
+                player=game.get_player(form_pass.player.data),
+                card=game.get_card(c))
     elif form_show.submit_show.data and form_show.validate():
         game.record_show(
             game.get_player(form_show.player.data),
             [game.get_card(c) for c in form_show.cards.data])
     elif form_reveal.submit_reveal.data and form_reveal.validate():
-        game.record_have(
-            game.get_player(form_reveal.player.data),
-            game.get_card(form_reveal.card.data),
-            True)
+        game.record_have_pass(
+            rel_type=ClueRelationType.HAVE,
+            player=game.get_player(form_reveal.player.data),
+            card=game.get_card(form_reveal.card.data))
 
     game.save(app.config['PICKLE_FILEPATH'])
 
     return render_template('gameplay_view.html', form_pass=form_pass,
                            form_show=form_show, form_reveal=form_reveal,
                            players=game.players, cards=game.cards,
-                           haves=game.haves, shows=game.shows,
+                           relations=game.relations,
                            cards_in_the_file=game.cards_in_the_file)
 
 

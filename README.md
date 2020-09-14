@@ -32,10 +32,11 @@ between them (see [Theory](#theory), below, for more details).
 
 I chose not to use SQL, at least for the initial implementation.  I was curious
 whether I could make the code more concise and elegant by just using plain
-custom Python classes.  So far, this has not come to fruition; the data
-structures are simple enough to create, but the methods I've had to develop to
-query them are still sorely lacking in usability and readability, I'm afraid.
-We will see at what point I may end up just giving up and migrating to SQL.
+custom Python classes.  I'm still not sure whether I've succeeded or not, but
+I've learned a lot in the attempt either way.  Players and Cards are
+namedtuples; relations between them are represented by the ClueRelation class;
+and last but not least, the ClueRelationFilter class provides a syntax to build
+queries about these relations.
 
 It also needs better unit tests.  But I think it works.
 
@@ -81,36 +82,31 @@ automatically.
 Not to go into too much detail, this is how we model a Clue player's game
 knowledge.  We have 2 basic entities, of course: Players and Cards.  We want to
 track certain types of special relationships between them, that we find out
-about during the game, and then make deductions based on those relationships.
+about during the game, and then make deductions based on those relations.
 (When we're lucky, our deductions in turn generate knowledge of additional such
-relationships, and our patchwork prognosis propagates!)  The types of
-relationships we want to track:
+relations, and our patchwork prognosis propagates!)  The types of relations we
+want to track:
 
-- a "Have": A relationship between 1 player and 1 card, with a true/false
-  value.  If we know player A has card X, we record a "Have" with value of True
-  for player A and card X.  If we know player B does _not_ have card X, we
-  record a "Have" with value of False for player B and card X.
+- a "Have": A relation between 1 player and 1 card, indicating that we know the
+  player has the card.
 
-- a "Show": A relationship between 1 player and up to 3 cards.  Whenever we
+- a "Pass": A relation between 1 player and 1 card, indicating that we know the
+  player _does not_ have the card; the opposite of a "Have".
+
+- a "Show": A relation between 1 player and up to 3 cards.  Whenever we
   know that player A showed player B one of several cards, we record a
-  "Show" for player A and those cards.  Additionally, a "Show" can be "voided":
-  for example, if we later confirm that that player A has one of those cards,
-  then knowing about the show is no longer useful info to us.
+  "Show" for player A and those cards.
 
-I contend that these two relationship types contain all the information we (or
-our computers) need to track, in order to be solid Clue players.
+I contend that these three relation types contain all the information we
+(or our computers) need to track, in order to be solid Clue players.
 
 In order to show myself precisely _how_ all necessary deductions can be made
-from just recording the above two relationship types, based on standard Clue
-events -- player A passes for cards XYZ, player B shows player C one of cards
-XYZ, player C reveals to me card W -- I've done a little diagram, which can be
-found in the "doc" directory.  It is not terribly rigorous in notation, and
-probably needs further explication to be clear to anyone living outside my own
-mind.  But it's what I've got right now, and I found it helpful, so maybe you
-will too.  Note that in the diagram, a False "Have" is referred to as a "Pass",
-and a True "Have" is referred to as a "Have"; this terminology is probably the
-clearest, but in the implementation, I combined "Have" and "Pass" into a single
-class (for convenience, I think it was...)
+from just recording the above relation types, based on standard Clue events --
+player A passes for cards XYZ, player B shows player C one of cards XYZ, player
+C reveals to me card W -- I've done a little diagram, which can be found in the
+"doc" directory.  It is not terribly rigorous in notation, and may need further
+explication, but it's what I've got right now, and I found it helpful, so maybe
+you will too.
 
 Crazy man's side note, if you have gotten as far as opening the diagram, there
 is one particular deduction arrow that I believe is missing from it -- I wonder
