@@ -14,8 +14,12 @@ Player = collections.namedtuple('Player', 'name hand_size')
 Card = collections.namedtuple('Card', 'name card_type')
 
 
-# A yes/no: Does this player have this card?
-# Created when this fact is known.
+class ClueRelationType(enum.Enum):
+    HAVE = "have"
+    PASS = "pass"
+    SHOW = "show"
+
+
 class Have:
     """Records a given player's having, or not having, of a given card.
 
@@ -39,8 +43,6 @@ class Have:
             or obj == self.card.card_type
 
 
-# A 4-way relationship between a player and 3 cards.
-# Created when a player shows a card to someone else.
 class Show:
     """Records that a given player showed one of several given cards.
 
@@ -226,7 +228,8 @@ class Game:
     def __deduce_player_passes_from_known_whole_hand(self, player):
         """If all player's cards are known, mark passes for all other cards."""
         player_haves = ClueRelationFilter(player).add(
-                "and", ClueRelationFilter("have")).get(self.haves)
+                "and", ClueRelationFilter(ClueRelationType.HAVE)).get(
+                    self.haves)
 
         if len(player_haves) == player.hand_size:
             for other_c in self.cards:
@@ -254,7 +257,8 @@ class Game:
         """If all players have passed for a card, add it to the file!"""
         for c in self.cards:
             players_passing = ClueRelationFilter(c).add(
-                "and", ClueRelationFilter("pass")).get(self.haves)
+                "and", ClueRelationFilter(ClueRelationType.PASS)).get(
+                    self.haves)
             if len(players_passing) == len(self.players):
                 self.cards_in_the_file.add(c)
 
@@ -265,10 +269,11 @@ class Game:
             q = q.add("or", ClueRelationFilter(c))
         q = q.add("and", ClueRelationFilter(show.player))
 
-        if len(q.add("and", ClueRelationFilter("have")).get(self.haves)) == 0:
+        if len(q.add("and", ClueRelationFilter(ClueRelationType.HAVE)).get(
+                self.haves)) == 0:
             passed_cards = [h.card for h in
-                            q.add("and", ClueRelationFilter("pass")).get(
-                                self.haves)]
+                            q.add("and", ClueRelationFilter(
+                                ClueRelationType.PASS)).get(self.haves)]
             unpassed_cards = set(show.cards) - set(passed_cards)
             if len(unpassed_cards) == 1:
                 for c in unpassed_cards:
@@ -372,10 +377,12 @@ class ClueRelationFilter:
             return not self.left.match(relation)
         elif self.statement == "all":
             return True
-        elif self.statement == "have":
+        elif self.statement == ClueRelationType.HAVE:
             return relation.yesno
-        elif self.statement == "pass":
+        elif self.statement == ClueRelationType.PASS:
             return not relation.yesno
+        elif self.statement == ClueRelationType.SHOW:
+            return len(relation.cards) > 1
         else:
             return self.statement in relation
 
