@@ -7,86 +7,61 @@ happens, and let the computer solve it for you!
 
 It has a rudimentary web frontend using Flask.
 
-This is a personal pet (Python) project, pursued purely per passion to see how
-hard it would be to program decent logic for solving Clue.  (I may or may not
-have also been frustrated about messing up my Clue game sheet by forgetting to
-cancel a "show" mark at the right time, and thought to myself that a computer
-should be doing this for me...)
-
-Disclaimer regarding the state of the art: I am not targeting it here.  I
-haven't even looked around for other extant Clue solvers yet.  I doubt that the
-world is seriously lacking a good-enough Clue solver program, at this moment.
-I'm just curious to see what I can do.
-
-Other priorities beckon, as always, so I'm writing this README largely as a way
-to let myself close the book on this project now, without feeling like it'll be
-impossible to re-open it later.
+This is a personal pet (Python) project, pursued purely per paucity of
+proficiency, to discover how hard it would be to program decent logic for
+solving Clue.  (I may or may not have also been frustrated about messing up my
+Clue game sheet by forgetting to cancel a "show" mark at the right time, and
+thought to myself that a computer should be doing this for me...)
 
 
 ## Notes on the backend
 
-The backend lives in the file `src/app/cluegame.py`.  The classes in this file
-are designed to model everything one would write down on one's Clue game sheet.
-Essentially, this means: players, cards, and several types of relationships
-between them (see [Theory](#theory), below, for more details).
-
-I chose not to use SQL, at least for the initial implementation.  I was curious
-whether I could make the code more concise and elegant by just using plain
-custom Python classes.  I'm still not sure whether I've succeeded or not, but
-I've learned a lot in the attempt either way.  Players and Cards are
-namedtuples; relations between them are represented by the ClueRelation class;
-and last but not least, the ClueRelationFilter class provides a syntax to build
-queries about these relations.
-
-It also needs better unit tests.  But I think it works.
+I've chosen not to use SQL, at least for now.  I was curious whether I could
+make the code more concise and elegant by just using plain custom Python
+classes.  I'm still not sure if I've succeeded, but I've learned a lot in the
+attempt either way.  The most interesting challenge has been developing a way
+to write readable queries without SQL.
 
 The high-level Game API is probably somewhat stable now.  For some examples of
 the API usage, see the tests for the Game class.
 
-The backend can operate fine without any persistence, but it does implement
-persistence methods (for the web interface's benefit) using `pickle`.
-
 
 ## Notes on the frontend
 
-The frontend is currently *very* crude and experimental.
+The web frontend is currently *very* crude and experimental.
 
-Due to the lack of a proper database, there is no multi-user capability right
-now.  If multiple users try to access the same instance of this app, confusion
-will certainly ensue!
+There is no multi-user capability right now.  If multiple users try to access
+the same instance of this app, confusion will certainly ensue!
 
 Game save-and-load is "possible", in that your game is automatically saved and
 loaded on each page reload.  But if you lose/exit your browser window and
 revisit the home page, you'll find that your only real option at the moment
 (without magic special knowledge) is to delete your game and start over.
 
-Error handling is near-nonexistent.  The app crashes easily, because the
-frontend neither prevents invalid data entry by the user very well, nor handles
-the resulting exceptions raised by the backend.
 
-The UI is exceedingly clunky, and entirely un-styled.  The worst offender
-currently, the Game Status display, is nearly unreadable; it's little more than
-a debugging info dump of the game state.  There are many major UX improvements
-that could or should be made to the input forms, as well.
+## Known issues
 
-Some of the above items will hopefully be improved at some point, and at such
-time, I'll try to remember to update this README accordingly.
+- The web app is prone to crash if the user enters invalid data (or even valid
+  data that's just logically impossible given the state of the game).  Building
+  better error handling and input validation is on the to-do list.
 
-BUT!  For now, if you are an exceptionally savvy user who can read my mind --
-or my code -- or if you are just me -- then all the functionality is there for
-you to track a game of Clue, and let the computer solve it for you
-automatically.
+- The web app's Game Status display is nearly unreadable; it's currently little
+  more than a debugging info dump of the game state.  Improving this is also on
+  the to-do list.
+
+- There are surely lots of other UI/UX improvements to make too.  Maybe I'll
+  get there someday.
 
 
 ## Theory
 
-Not to go into too much detail, this is how we model a Clue player's game
-knowledge.  We have 2 basic entities, of course: Players and Cards.  We want to
-track certain types of special relationships between them, that we find out
-about during the game, and then make deductions based on those relations.
-(When we're lucky, our deductions in turn generate knowledge of additional such
-relations, and our patchwork prognosis propagates!)  The types of relations we
-want to track:
+Not to go into too much detail, this section describes how we model a Clue
+player's game knowledge.  We have 2 basic entities, of course: Players and
+Cards.  We want to track certain types of special relationships between them,
+that we find out about during the game, and then make deductions based on those
+relations.  (When we're lucky, our deductions in turn generate knowledge of
+additional such relations, and our patchwork prognosis propagates!)  The types
+of relations we want to track:
 
 - a "Have": A relation between 1 player and 1 card, indicating that we know the
   player has the card.

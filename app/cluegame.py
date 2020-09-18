@@ -1,3 +1,24 @@
+"""cluegame.py -- Classes to track Clue game events and make inferences
+
+The board game Clue is also known as Cluedo.  This module contains classes that
+make it possible to record specific knowledge-generating events that a Clue
+player may observe during the course of a game (such as, for example, that
+Player A showed Player B one of either Card X, Card Y, or Card Z).
+
+More to the point, Clue is a game about building knowledge through logical
+inference. As such, these classes are designed to track not only these events
+themselves, but also the sum total of game knowledge that can be logically
+inferred from them.
+
+Classes:
+    ClueCardType     -- an Enum of possible card types in the game
+    ClueRelationType -- an Enum of possible types of Player-Card relation
+    Player           -- a player in the Clue game
+    Card             -- a card in the Clue game
+    ClueRelation     -- an individual Player-Card relation that is known
+    Game             -- a tracker and inference engine for total game knowledge
+"""
+
 from app.objectfilter import ObjectFilter
 import enum
 import pickle
@@ -6,12 +27,21 @@ import collections
 
 
 class ClueCardType(enum.Enum):
+    """an Enum of possible card types in a Clue game"""
     PERSON = "Person"
     WEAPON = "Weapon"
     ROOM = "Room"
 
 
 class ClueRelationType(enum.Enum):
+    """an Enum of possible types of Player-Card relation to record in Clue
+
+    These represent my own semi-invented terminology for describing a player's
+    knowledge in a Clue game.  In case their meanings are not entirely
+    self-evident, an explanation of these terms and how they relate to player
+    knowledge in the game of Clue can be found the package README.md file; see
+    esp. the "Theory" section.
+    """
     HAVE = "have"
     PASS = "pass"
     SHOW = "show"
@@ -30,6 +60,23 @@ Card.card_type.__doc__ = 'Which ClueCardType this card belongs to'
 
 class ClueRelation(collections.namedtuple(
         'ClueRelation', 'rel_type player cards')):
+    """A generalized representation of a piece of Clue game knowledge to record
+
+    A ClueRelation instance represents knowledge of a specific type of
+    relationship between a given Player, and one or more given Cards.
+
+    How many Cards are in a relation, depends on the relation's type:
+        A HAVE or PASS relation has 1 card.
+        A SHOW relation has 3 cards.
+
+    Instance variables:
+        rel_type -- a ClueRelationType, defining the type of this relation
+        player   -- the Player who is involved in this relation
+        cards    -- a list of the Card(s) involved in this relation
+
+    The __contains__ method is signficiantly customized (perhaps "bastardized")
+    to aid querying.
+    """
     __slots__ = ()
 
     def __repr__(self):
@@ -37,22 +84,33 @@ class ClueRelation(collections.namedtuple(
             self.rel_type, self.player, self.cards)
 
     def __contains__(self, obj):
+        """Checks for any of several distinct conditions
+
+        The inherited method is overridden, in a slight abuse, to check whether
+        ANY of the following two conditions holds (logical "or"):
+            - a given Player is self.player
+            - a given Card is in self.cards
+            - a given ClueCardType is represented among self.cards
+
+        The last condition may seem strange, but I found it a useful trick to
+        help keep the semantics consistently intuitive for certain queries that
+        become relevant when making inferences in the game of Clue.  If I come
+        up with a better way (i.e. a simple way to query lists of ClueRelations
+        with intuitive-enough semantics that avoids the need for it), then I
+        may consider removing this last condition, as it seems potentially
+        confusing.
+        """
         return obj == self.player \
             or obj in self.cards \
             or obj in [c.card_type for c in self.cards]
 
 
-ClueRelation.__doc__ = \
-    'A relation between a Player and one or more Cards.'
-ClueRelation.rel_type.__doc__ = \
-    'Which ClueRelationType this relation belongs to'
-ClueRelation.player.__doc__ = \
-    'The Player that this relation pertains to'
-ClueRelation.cards.__doc__ = \
-    'The list of Cards (possible singleton) that this relation pertains to'
-
-
 class ClueRelationFilter(ObjectFilter):
+    """A tool to query a list of ClueRelations
+
+    Public methods (besides inherited methods):
+        match -- recursively tests aspects of a ClueRelation
+    """
     def match(self, relation):
         """Recursively check if relation matches all filter statements.
 
@@ -84,9 +142,11 @@ class Game:
           this is how you win folks! (self.cards_in_the_file)
 
     The Game instance provides public methods to record new ClueRelations as
-    they become known; these methods also recursively check for and record the
-    consequences of any deductions that follow from each newly-discovered
-    relation.
+    they become known.
+
+    These same public methods also recursively check for and record the
+    consequences of any logical deductions that follow from each
+    newly-discovered ClueRelation.
 
     There are also save/load/delete methods to handle persisting the game
     state.
@@ -169,10 +229,13 @@ class Game:
         player = self.__normalize_input_player_or_card(player, self.players)
         card = self.__normalize_input_player_or_card(card, self.cards)
 
+        # Record the relation
         new_have = self.__generate_valid_have_pass(
             ClueRelationType.HAVE, player, card)
         if new_have:
             self.relations.append(new_have)
+
+            # Make inferences
             self.__deduce_other_player_passes_from_have(player, card)
             self.__deduce_player_passes_from_known_whole_hand(player)
             self.__deduce_card_passes_from_cardtype_completion(card.card_type)
@@ -183,10 +246,13 @@ class Game:
         player = self.__normalize_input_player_or_card(player, self.players)
         card = self.__normalize_input_player_or_card(card, self.cards)
 
+        # Record the relation
         new_pass = self.__generate_valid_have_pass(
             ClueRelationType.PASS, player, card)
         if new_pass:
             self.relations.append(new_pass)
+
+            # Make inferences
             matching_shows = (
                     ClueRelationFilter(player) +
                     ClueRelationFilter(card) +
@@ -205,18 +271,27 @@ class Game:
                 self.__normalize_input_player_or_card(c, self.cards))
         cards = my_cards
 
+        # Record the relation
         new_show = self.__generate_valid_show(player, cards)
         if new_show:
             self.relations.append(new_show)
+
+            # Make inferences
             self.__deduce_have_from_show(new_show)
 
     def __generate_valid_have_pass(self, rel_type, player, card):
-        """Record a HAVE or PASS relation.
+        """Create a HAVE or PASS relation.
+
+        First checks to make sure the HAVE or PASS is logically valid within
+        the context of the current Game.  Then constructs and returns the
+        ClueRelation.
 
         Arguments:
             rel_type -- ClueRelationType.HAVE or .PASS
             player   -- the Player who has (or not) the card
             card     -- the Card which is had (or not)
+        Returns:
+            a ClueRelation of type HAVE or PASS
         """
         # Catch any overlapping relations -- Don't record it!
         matching_haves_passes = (
@@ -227,7 +302,6 @@ class Game:
                     ClueRelationFilter(ClueRelationType.PASS)
                 )
             ).get(self.relations)
-
         for h in matching_haves_passes:
             if h.rel_type == rel_type:
                 return  # Ignore attempted duplicate record.
@@ -243,11 +317,13 @@ class Game:
             cards=[card])
 
     def __generate_valid_show(self, player, cards):
-        """Record a SHOW relation.
+        """Create a SHOW relation.
 
         Arguments:
             player   -- the Player who showed the cards
             cards     -- the Card which were shown
+        Returns:
+            a ClueRelation of type SHOW
         """
         new_show = ClueRelation(
             rel_type=ClueRelationType.SHOW,
@@ -256,21 +332,21 @@ class Game:
         return new_show
 
     def __deduce_other_player_passes_from_have(self, player, card):
-        """If player has card, all other players must not."""
+        """If player has card, we infer all other players do not have card."""
         for other_p in self.players:
             if other_p != player:
                 self.record_pass(other_p, card)
 
     def __deduce_player_passes_from_known_whole_hand(self, player):
         """If all player's cards are known, mark passes for all other cards."""
-        player_cards = [r.cards[0] for r in (
+        known_cards_in_hand = [r.cards[0] for r in (
                 ClueRelationFilter(player) +
                 ClueRelationFilter(ClueRelationType.HAVE)
             ).get(self.relations)]
 
-        if len(player_cards) == player.hand_size:
+        if len(known_cards_in_hand) == player.hand_size:
             for other_c in self.cards:
-                if other_c not in player_cards:
+                if other_c not in known_cards_in_hand:
                     self.record_pass(player, other_c)
 
     def __deduce_card_passes_from_cardtype_completion(self, cluecardtype):
@@ -299,7 +375,12 @@ class Game:
                 self.record_pass(p, remaining_card)
 
     def __deduce_have_from_show(self, show):
-        """If show has 2 passed cards and none had, deduce & record a Have."""
+        """If given SHOW has 2 PASSed cards for player, infer & record a HAVE.
+
+        If show.cards contains exactly 2 cards that show.player has PASSes
+        recorded for, then infer and record a HAVE for show.player and the 3rd
+        card.
+        """
         q = ClueRelationFilter()
         for c in show.cards:
             q = q / ClueRelationFilter(c)
@@ -316,7 +397,7 @@ class Game:
                     self.record_have(show.player, c)
 
     def __normalize_input_player_or_card(self, obj, lst):
-        """Returns a matching member of a list if possible.
+        """Returns a matching member of a Player or Card list, if possible.
 
         Arguments:
             obj -- a Player, Card, or a name (string)
@@ -335,7 +416,10 @@ class Game:
                 return my_obj
 
     def save(self, path):
-        """Persists the Game state to a file."""
+        """Persists the Game state to a file.
+
+        BEWARE: Overwrites any existing file at 'path'.
+        """
         with open(path, 'wb') as dbfile:
             pickle.dump(self, dbfile)
 
@@ -348,7 +432,10 @@ class Game:
             return None
 
     def delete(obj, path):
-        """Deletes a persisted Game state (or any file, really; be careful)."""
+        """Deletes a persisted Game state in a file.
+
+        BEWARE: Deletes any existing file at 'path'.
+        """
         os.remove(path)
 
 

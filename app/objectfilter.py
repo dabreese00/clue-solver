@@ -1,3 +1,17 @@
+"""objectfilter.py -- General tools for querying custom Python class instances
+
+I am not really totally sure that the functionality provided here can't already
+be had in a much more succinct way somehow, e.g. using Python builtin
+generators, list comprehensions, or something of the sort.  I tried for a
+little while, and failed to find an adequate alternative for my querying needs.
+Anyway, I wrote this, so here it is; I'll use it until and unless I find a
+distinctly better way.
+
+Classes:
+    ObjectFilter -- a tool to query a list of Python custom class instances
+"""
+
+
 # TODO: Make this class immutable?
 class ObjectFilter:
     """Represents a filter to match custom objects of any kind.

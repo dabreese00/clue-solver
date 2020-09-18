@@ -1,9 +1,15 @@
 Short term:
 - Improve error handling & data validation in frontend.
 - Design better Game Status display.
-- Make instructions to run locally via Docker?
+- Refactor the Game.record_ methods to DRY the code further.
+- Write proper unit tests.
 
 Long term (if we go that far):
 - Add ability to explicitly load saved game from homepage.
 - Convert objects to SQLAlchemy models.
 - Build game history & multi-user capability.
+
+Ideas:
+- Make instructions to run locally via Docker?
+- Game class: Separate the inference engine from pure recording functions?
+- Convert diagram to Mermaid-generated?
