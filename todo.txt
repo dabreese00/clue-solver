@@ -1,7 +1,6 @@
 Short term:
 - Improve error handling & data validation in frontend.
 - Design better Game Status display.
-- Refactor the Game.record_ methods to DRY the code further.
 - Write proper unit tests.
 
 Long term (if we go that far):
