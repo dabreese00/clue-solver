@@ -23,7 +23,7 @@ def create_game():
         players = []
         for entry in form.player.data:
             if entry['name'] and entry['hand_size']:
-                players.append((entry['name'], entry['hand_size']))
+                players.append((entry['name'], int(entry['hand_size'])))
         game = Game(app.config['CLUE_CARDS_PERSONS'],
                     app.config['CLUE_CARDS_WEAPONS'],
                     app.config['CLUE_CARDS_ROOMS'],
