@@ -217,19 +217,26 @@ class Game:
         }
         self.cards = set()
         for t in ClueCardType:
-            for c in clue_cards[t]:
-                self.cards.add(Card(c, t))
+            for n in clue_cards[t]:
+                if n not in [c.name for c in self.cards]:
+                    self.cards.add(Card(n, t))
+                else:
+                    raise ValueError("Duplicate card name: {}".format(n))
 
         # Setup the Players
         self.players = set()
         for p in players:
-            self.players.add(Player._make(p))
+            new_p = Player._make(p)
+            if new_p.name not in [q.name for q in self.players]:
+                self.players.add(new_p)
+            else:
+                raise ValueError(
+                    "Duplicate player name: {}".format(new_p.name))
 
-        for p in self.players:
-            for c in self.cards:
-                if p.name == c.name:
-                    raise ValueError(
-                        "Forbidden Player name: {}".format(p.name))
+        num_cards_in_the_file = len(clue_cards.keys())
+        num_cards_in_hands = sum([p.hand_size for p in self.players])
+        if len(self.cards) != num_cards_in_the_file + num_cards_in_hands:
+            raise ValueError("Player hand sizes and card count don't add up!")
 
         # Setup the Game state knowledge
         self.relations = []
@@ -399,6 +406,8 @@ class Game:
 
     def __normalize_input(self, player, cards):
         """Allow to pass in Players/Cards either as objects, or by name
+
+        Assumes that Player and Card names are unique.
 
         Arguments:
             player -- a Player object, or name (string) to normalize

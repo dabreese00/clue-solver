@@ -48,6 +48,100 @@ def test_game_setup(clue_game):
     assert len(game.players) == 4
 
 
+def test_unique_names():
+    with pytest.raises(ValueError):
+        Game(
+                [
+                    "Colonel Mustard"
+                ],
+                [
+                    "Rope"
+                ],
+                [
+                    "Billiard Room",
+                    "Ballroom"
+                ],
+                {
+                    ('Adam', 1),
+                    ('Adam', 0)
+                }
+            )
+    with pytest.raises(ValueError):
+        Game(
+                [
+                    "Colonel Mustard",
+                    "Colonel Mustard"
+                ],
+                [
+                    "Rope",
+                    "Lead Pipe"
+                ],
+                [
+                    "Billiard Room",
+                    "Ballroom"
+                ],
+                {
+                    ('Adam', 2),
+                    ('Cynthia', 1)
+                }
+            )
+
+
+def test_invalid_hand_sizes():
+    with pytest.raises(ValueError):
+        Game(
+                [
+                    "Colonel Mustard"
+                ],
+                [
+                    "Rope"
+                ],
+                [
+                    "Billiard Room"
+                ],
+                {
+                    ('Adam', 1),
+                    ('Cynthia', 0)
+                }
+            )
+    with pytest.raises(ValueError):
+        Game(
+                [
+                    "Colonel Mustard",
+                    "Miss Scarlet"
+                ],
+                [
+                    "Rope"
+                ],
+                [
+                    "Billiard Room"
+                ],
+                {
+                    ('Adam', 0),
+                    ('Cynthia', 0)
+                }
+            )
+
+    game = Game(
+            [
+                "Colonel Mustard",
+                "Miss Scarlet"
+            ],
+            [
+                "Rope"
+            ],
+            [
+                "Billiard Room"
+            ],
+            {
+                ('Adam', 1),
+                ('Cynthia', 0)
+            }
+        )
+    assert len(game.cards) == 4
+    assert len(game.players) == 2
+
+
 def test_simple_show_and_have(clue_game):
     game = clue_game
 
