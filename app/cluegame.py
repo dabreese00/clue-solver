@@ -149,7 +149,7 @@ class ClueRelationFilter(ObjectFilter):
             return not self.left.match(relation)
         elif self.statement == "all":
             return True
-        elif self.statement in ClueRelationType:
+        elif self.statement in list(ClueRelationType):
             return relation.rel_type == self.statement
         else:
             return self.statement in relation
