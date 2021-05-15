@@ -64,8 +64,10 @@ Card.card_type.__doc__ = 'Which ClueCardType this card belongs to'
 def normalize_to_list(obj, lst):
     """Returns a matching member of a Player or Card list, if possible.
 
+    Assumes names of objects in the list are unique, for match by name.
+
     Arguments:
-        obj -- a Player, Card, or a name (string)
+        obj -- a Player, Card, or a name (string) representing one
         lst -- a list of Players or Cards
 
     Returns:
@@ -73,14 +75,15 @@ def normalize_to_list(obj, lst):
     """
     if obj in lst:
         return obj
-    else:
-        try:
-            my_obj = next(o for o in lst if o.name == obj)
-        except(StopIteration):
-            raise ValueError("No such Player/Card {} in list {}".format(
-                obj, lst))
-        else:
-            return my_obj
+
+    try:
+        my_obj = next(o for o in lst if o.name == obj)
+
+    except(StopIteration):
+        raise ValueError("No such Player/Card {} in list {}".format(
+            obj, lst))
+
+    return my_obj
 
 
 class ClueRelation(collections.namedtuple(
