@@ -23,8 +23,12 @@ def other_object_with_name(generic_class_with_name):
 
 @pytest.fixture
 def list_containing_object(single_object_with_name):
-    obj = single_object_with_name
-    return [obj]
+    return [single_object_with_name]
+
+
+@pytest.fixture
+def list_not_containing_object(other_object_with_name):
+    return [other_object_with_name]
 
 
 @pytest.fixture
@@ -45,6 +49,14 @@ def test_normalize_singleton(single_object_with_name, list_containing_object):
 
     assert normalize_to_list(obj, lst).name == obj.name
     assert normalize_to_list(obj, lst) in lst
+
+
+def test_missing(single_object_with_name, list_not_containing_object):
+    obj = single_object_with_name
+    lst = list_not_containing_object
+
+    with pytest.raises(ValueError):
+        normalize_to_list(obj, lst)
 
 
 def test_nontrivial_list(single_object_with_name,

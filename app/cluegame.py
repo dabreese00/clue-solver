@@ -74,8 +74,9 @@ def normalize_to_list(obj, lst):
     if obj in lst:
         return obj
     else:
-        my_obj = next(o for o in lst if o.name == obj)
-        if my_obj == StopIteration:
+        try:
+            my_obj = next(o for o in lst if o.name == obj)
+        except(StopIteration):
             raise ValueError("No such Player/Card {} in list {}".format(
                 obj, lst))
         else:
