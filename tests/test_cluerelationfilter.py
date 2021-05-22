@@ -122,11 +122,9 @@ def three_shows(four_players, clue_card_set, get_obj):
     return shows
 
 
-def test_one(clue_card_set, get_obj, four_players, four_haves_passes,
-             three_shows):
+def test_simple_filter(get_obj, four_players, four_haves_passes, three_shows):
 
     players = four_players
-    cards = clue_card_set
     haves = four_haves_passes
     shows = three_shows
 
@@ -134,6 +132,17 @@ def test_one(clue_card_set, get_obj, four_players, four_haves_passes,
 
     assert len(filter1.get(haves)) == 3
     assert len(filter1.get(shows)) == 1
+
+
+def test_very_complex_filter(clue_card_set, get_obj, four_players,
+                             four_haves_passes, three_shows):
+
+    players = four_players
+    cards = clue_card_set
+    haves = four_haves_passes
+    shows = three_shows
+
+    filter1 = ClueRelationFilter(get_obj(players, "Cynthia"))
 
     filter2 = filter1.compound("and", ClueRelationFilter(
         get_obj(cards, "Billiard Room")))
