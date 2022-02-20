@@ -17,9 +17,6 @@ Classes:
     Card             -- a card in the Clue game
     ClueRelation     -- an individual Player-Card relation that is known
     Game             -- a tracker and inference engine for total game knowledge
-
-Functions:
-    normalize_to_list -- matches an object (or its name) to a list of objects
 """
 
 from app.objectfilter import ObjectFilter
@@ -59,31 +56,6 @@ Card = collections.namedtuple('Card', 'name card_type')
 Card.__doc__ += ': A card in the Clue game'
 Card.name.__doc__ = 'A name by which this card is identified'
 Card.card_type.__doc__ = 'Which ClueCardType this card belongs to'
-
-
-def normalize_to_list(obj, lst):
-    """Returns a matching member of a Player or Card list, if possible.
-
-    Assumes names of objects in the list are unique, for match by name.
-
-    Arguments:
-        obj -- a Player, Card, or a name (string) representing one
-        lst -- a list of Players or Cards
-
-    Returns:
-        a Player or Card from the list, matching obj
-    """
-    if obj in lst:
-        return obj
-
-    try:
-        my_obj = next(o for o in lst if o.name == obj)
-
-    except(StopIteration):
-        raise ValueError("No such Player/Card {} in list {}".format(
-            obj, lst))
-
-    return my_obj
 
 
 class ClueRelation(collections.namedtuple(
@@ -376,7 +348,7 @@ class Game:
         for card_name in [c.name for c in
                           self.cards if c.card_type == cluecardtype]:
             cards_of_type_total.append(
-                normalize_to_list(card_name, self.cards))
+                self.normalize_to_list(card_name, self.cards))
 
         if len(cards_of_type_located) == len(cards_of_type_total) - 1:
             remaining_card = (
@@ -408,6 +380,30 @@ class Game:
                 for c in unpassed_cards:
                     self.record_have(show.player, c)
 
+    def normalize_to_list(obj, lst):
+        """Returns a matching member of a Player or Card list, if possible.
+
+        Assumes names of objects in the list are unique, for match by name.
+
+        Arguments:
+            obj -- a Player, Card, or a name (string) representing one
+            lst -- a list of Players or Cards
+
+        Returns:
+            a Player or Card from the list, matching obj
+        """
+        if obj in lst:
+            return obj
+
+        try:
+            my_obj = next(o for o in lst if o.name == obj)
+
+        except(StopIteration):
+            raise ValueError("No such Player/Card {} in list {}".format(
+                obj, lst))
+
+        return my_obj
+
     def __normalize_input(self, player, cards):
         """Allow to pass in Players/Cards either as objects, or by name
 
@@ -419,11 +415,11 @@ class Game:
         Returns:
             a Player object and a list of Card objects from the current Game
         """
-        player = normalize_to_list(player, self.players)
+        player = self.normalize_to_list(player, self.players)
         my_cards = []
         for c in cards:
             my_cards.append(
-                normalize_to_list(c, self.cards))
+                self.normalize_to_list(c, self.cards))
         cards = my_cards
         return player, cards
 
